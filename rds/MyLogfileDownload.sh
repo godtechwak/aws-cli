@@ -22,5 +22,5 @@ logfile_list=`aws-vault exec test/prod -- aws rds describe-db-log-files --db-ins
 
 for rLINE in ${logfile_list};do
         echo "**Downloading files...${rLINE}"
-        aws-vault exec daangn/prod/kr -- aws rds download-db-log-file-portion --db-instance-identifier $1 --log-file-name ${rLINE} --output text >> $4.total.log
+        aws-vault exec test/prod -- aws rds download-db-log-file-portion --db-instance-identifier $1 --log-file-name ${rLINE} --output text >> $4.total.log
 done
