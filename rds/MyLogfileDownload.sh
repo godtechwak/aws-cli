@@ -1,5 +1,14 @@
 #!/bin/sh
 
+export red="\033[1;31m"
+export green="\033[1;32m"
+export yellow="\033[1;33m"
+export blue="\033[1;34m"
+export purple="\033[1;35m"
+export cyan="\033[1;36m"
+export grey="\033[0;37m"
+export reset="\033[m"
+
 :<<'END'
 
 - $1: DB 인스턴스명
@@ -19,6 +28,16 @@ if [ -f ./$4.total.log ]; then
 fi
 
 logfile_list=`aws-vault exec test/prod -- aws rds describe-db-log-files --db-instance-identifier $1 --filename-contains $2 --file-size $3 | grep -i LogFileName | sed s'/,//'g | awk '{print $2}' | xargs`
+
+if [[ ${logfile_list} == "" ]]; then
+        echo "\n"
+        echo ${red}
+        echo "Not exists LogFile in condition !!"
+        echo "Check parameter."
+        echo ${reset}
+        echo "\n"
+        exit 1;
+fi
 
 for rLINE in ${logfile_list};do
         echo "**Downloading files...${rLINE}"
