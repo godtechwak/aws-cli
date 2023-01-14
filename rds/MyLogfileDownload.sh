@@ -51,7 +51,7 @@ try
 (
 	# Filename Default
         if [[ -z $FILE_NAME ]]; then
-                FILE_NAME="slowquerylog"
+                FILE_NAME=$(date +"%Y-%m-%d-%H-%M-%S")
         fi
 
 	# Clear file contents
