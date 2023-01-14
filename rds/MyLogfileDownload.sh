@@ -4,15 +4,20 @@
 
 =======================================================================================================
 
-- $1: DB 인스턴스명
-- $2: Down 받으려는 로그파일명에 포함된 문자(contain the specified string)
-- $3: Down 받으려는 로그파일 사이즈(larger than the specified size)
-- $4: 로그 데이터 합친 통합파일명(consolidate file)
+Decription
+- 슬로우로그 파일 또는 에러로그 파일을 내려받아서 1개 파일로 통합하는 스크립트
 
-command ex1) sh MyLogfileDownload.sh prod-test-main-2 mysql-slowquery.log.2023-01-03 700 slowquerylog
-command ex2) sh MyLogfileDownload.sh prod-test-main-2 mysql-slowquery.log.2023-01 700 slowquerylog
-command ex3) sh MyLogfileDownload.sh prod-test-main-2 mysql-error.log.2023-01-03 700 errorlog
-command ex4) sh MyLogfileDownload.sh prod-test-main-2 mysql-error.log.2023-01 700 errorlog
+Parameter
+- $1) DB 인스턴스명
+- $2) Down 받으려는 로그파일명에 포함된 문자(contain the specified string)
+- $3) Down 받으려는 로그파일 사이즈(larger than the specified size)
+- $4) 로그 데이터 합친 통합파일명(consolidate file)
+
+Command
+- ex1) sh MyLogfileDownload.sh prod-test-main-2 mysql-slowquery.log.2023-01-03 700 slowquerylog
+- ex2) sh MyLogfileDownload.sh prod-test-main-2 mysql-slowquery.log.2023-01 700 slowquerylog
+- ex3) sh MyLogfileDownload.sh prod-test-main-2 mysql-error.log.2023-01-03 700 errorlog
+- ex4) sh MyLogfileDownload.sh prod-test-main-2 mysql-error.log.2023-01 700 errorlog
 
 =======================================================================================================
 
