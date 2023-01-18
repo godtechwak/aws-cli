@@ -16,8 +16,8 @@ Parameter
 Command
 - ex1) sh MyLogfileDownload.sh prod-test-main-2 mysql-slowquery.log.2023-01-03 700 slowquerylog
 - ex2) sh MyLogfileDownload.sh prod-test-main-2 mysql-slowquery.log.2023-01 700 slowquerylog
-- ex3) sh MyLogfileDownload.sh prod-test-main-2 mysql-error.log.2023-01-03 700 errorlog
-- ex4) sh MyLogfileDownload.sh prod-test-main-2 mysql-error.log.2023-01 700 errorlog
+- ex3) sh MyLogfileDownload.sh prod-test-main-2 mysql-error-running.log.2023-01-03 700 errorlog
+- ex4) sh MyLogfileDownload.sh prod-test-main-2 mysql-error-running.log.2023-01 700 errorlog
 
 =======================================================================================================
 
@@ -54,61 +54,77 @@ function catch()
 
 try
 (
-	# Filename Default
-        if [[ -z $FILE_NAME ]]; then
-                FILE_NAME=$(date +"%Y-%m-%d-%H-%M-%S")
-        fi
+  # Filename Default
+  if [[ -z $FILE_NAME ]]; then
+    FILE_NAME=$(date +"%Y-%m-%d-%H-%M-%S")
+  fi
 
-	# Clear file contents
-	if [ -f ./${FILE_NAME}.total.log ]; then
-		echo ${green}
-		echo "Clear file contents(./${FILE_NAME}.total.log)"
-        	echo /dev/null > ./${FILE_NAME}.total.log
-		echo ${reset}
-	fi
+  # Clear file contents
+  if [ -f ./${FILE_NAME}.total.log ]; then
+    echo ${green}
+    echo "Clear file contents!! (./${FILE_NAME}.total.log)"
+          echo /dev/null > ./${FILE_NAME}.total.log
+    echo ${reset}
+  fi
 
-	# Parameter Check
-	if [[ -z $1 ]] || [[ -z $2 ]] || [[ -z $3 ]]; then
-		exit 100;
-	fi
+  # Parameter Check
+  if [[ -z $1 ]] || [[ -z $2 ]] || [[ -z $3 ]]; then
+    exit 100;
+  fi
 
-	# Logfile List
-	logfile_list=`aws-vault exec test/prod -- aws rds describe-db-log-files --db-instance-identifier $1 --filename-contains $2 --file-size $3 | grep -i LogFileName | sed s'/,//'g | awk '{print $2}' | xargs`
+  # Logfile List
+  logfile_list=`aws-vault exec test/dir -- aws rds describe-db-log-files --db-instance-identifier $1 --filename-contains $2 --file-size $3 | grep -i LogFileName | sed s'/,//'g | awk '{print $2}' | xargs`
 
-	if [[ -z ${logfile_list} ]]; then
-		exit 200;
-	fi
+  if [[ -z ${logfile_list} ]]; then
+    exit 200;
+  fi
 
-	# Download file and aggregate
-	echo ${green}
-	for rLINE in ${logfile_list};do
-        	echo "**Downloading files...${rLINE}"
-        	aws-vault exec test/prod -- aws rds download-db-log-file-portion --db-instance-identifier $1 --log-file-name ${rLINE} --output text >> ${FILE_NAME}.total.log
-	done
+  # Download file and aggregate
+  echo ${green}
+  for rLINE in ${logfile_list};do
+          echo "**Downloading files...${rLINE}"
+          aws-vault exec test/dir -- aws rds download-db-log-file-portion --db-instance-identifier $1 --log-file-name ${rLINE} --output text >> ${FILE_NAME}.total.log
+  done
 
-	echo "File creation is complete. ${reset}${purple}(${FILE_NAME}.total.log)"
-	echo ${reset}
+  echo "File creation is complete. ${reset}${purple}(${FILE_NAME}.total.log)${reset}\n"
+
+  if [[ ${logfile_list} == *"slow"* ]]; then
+    echo "Do you want to use the pt-query-digest for slowquery log?(y or anything) "
+    read my_answer
+    if [[ ${my_answer} == "y" ]] || [[ ${my_answer} == "Y" ]]; then
+      which pt-query-digest > /dev/null
+      if [[ $? == 1 ]]; then
+	echo "${red}please install pt-query-digest!!!${reset}"
+        exit 0;
+      fi
+      echo "${green}File creation is complete.${reset} ${purple}(${FILE_NAME}.analyze.log)${reset}"
+      cat /dev/null > ${FILE_NAME}.analyze.log
+      pt-query-digest ${FILE_NAME}.total.log > ${FILE_NAME}.analyze.log
+    else
+      exit 0;
+    fi
+  fi
 )
 catch || {
-	case $exception_code in
-		$ERR_PARAM_EMPTY)
-			echo ${yellow}
-			echo "\n\tERR_PARAM_EMPTY(error no: 100): check empty parameter. \n"
-			echo ${reset}
-			echo "\tcommand:"
-		 	echo "\t\tex1) sh MyLogfileDownload.sh prod-test-main-2 mysql-slowquery.log.2023-01-03 700 slowquerylog"
-			echo "\t\tex2) sh MyLogfileDownload.sh prod-test-main-2 mysql-slowquery.log.2023-01 700 slowquerylog"
-			echo "\t\tex3) sh MyLogfileDownload.sh prod-test-main-2 mysql-error.log.2023-01-03 700 errorlog"
-			echo "\t\tex4) sh MyLogfileDownload.sh prod-test-main-2 mysql-error.log.2023-01 700 errorlog\n\n"
-		;;
-		$ERR_PARAM_VALUE)
-			echo ${red}
-			echo "\n\tERR_PARAM_VALUE(error no: 200): check parameter value."
-			echo "\tex) file date or file size or something else.. \n"
-			echo ${reset}
-		;;
-		*)
-			echo "something wrong.."
-		;;
-	esac
+  case $exception_code in
+    $ERR_PARAM_EMPTY)
+      echo ${yellow}
+      echo "\n\tERR_PARAM_EMPTY(error no: 100): check empty parameter. \n"
+      echo ${reset}
+      echo "\tcommand:"
+      echo "\t\tex1) sh MyLogfileDownload.sh prod-test-main-2 mysql-slowquery.log.2023-01-03 700 slowquerylog"
+      echo "\t\tex2) sh MyLogfileDownload.sh prod-test-main-2 mysql-slowquery.log.2023-01 700 slowquerylog"
+      echo "\t\tex3) sh MyLogfileDownload.sh prod-test-main-2 mysql-error-running.log.2023-01-03 700 errorlog"
+      echo "\t\tex4) sh MyLogfileDownload.sh prod-test-main-2 mysql-error-running.log.2023-01 700 errorlog\n\n"
+    ;;
+    $ERR_PARAM_VALUE)
+      echo ${red}
+      echo "\n\tERR_PARAM_VALUE(error no: 200): check parameter value."
+      echo "\tex) file date or file size or something else.. \n"
+      echo ${reset}
+    ;;
+    *)
+      echo "something wrong.."
+    ;;
+  esac
 }
